@@ -55,3 +55,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Editor and Mac stuff
+*~
+\#*\#
+*.swp
+.DS_Store
