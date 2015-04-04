@@ -1,3 +1,4 @@
+import time
 import argparse
 import numpy as np
 
@@ -35,24 +36,36 @@ def main():
 
     sample_count = len(signal)
     window_scount = int(sample_freq * WINDOW_LEN)  # of samples in each window
+    freqs = np.fft.fftfreq(window_scount)
 
+    # TODO HOW TO SYNC MUSIC TO THIS?!?
+    # TODO negatives
     for i in xrange(0, sample_count, window_scount):
+        now = time.time()
+        print(chr(27) + "[2J")
+
         slice_ = ch1[i:i + window_scount]
-        n = len(slice_)
-        freqs = np.fft.fftfreq(n)
+        if len(slice_) < window_scount:
+            break
         coeff = np.fft.fft(slice_)
         coeff = np.abs(coeff)  # only use magnitude of FFT coeffs
 
-        SHIT_TO_MAP = [0, 10, 50, 100, 150, 200, 250, 350, 450, 500, 600,
-                       700, 800]
-        print(chr(27) + "[2J")
+        SHIT_TO_MAP = [0, 10, 20, 33, 44, 50, 68, 79, 88, 100,
+                       120, 132, 152, 178, 189, 200, 220, 250, 270, 290,
+                       305, 315, 325, 338, 350, 370, 390, 410, 425, 440]  # up to 441 is positive
         for point in SHIT_TO_MAP:
             print '{: .3f}'.format(freqs[point]),
             bars = int(coeff[point] * 10)
-            if bars > 20: bars = 20
+            if bars > 30: bars = 30
             print '>' * bars
-        import time
-        time.sleep(0.01)
+
+        elapsed = time.time() - now
+        sleep_time = WINDOW_LEN - elapsed
+        if sleep_time > 0:
+            time.sleep(WINDOW_LEN - elapsed)
+        else:
+            # TODO incur sleep debt to catch up?
+            pass
 
     # import code
     # code.interact(local=locals())
