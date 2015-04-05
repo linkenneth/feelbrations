@@ -6,7 +6,7 @@ import numpy as np
 from scipy.io import wavfile
 from pydub import AudioSegment
 
-WINDOW_LEN = 0.02  # seconds
+WINDOW_LEN = 0.04  # seconds
 
 def make_wav(fname):
     s = fname.split('.')
@@ -23,16 +23,21 @@ def make_wav(fname):
 
 def choose_freqs(freqs):
     freqs = freqs[freqs >= 0]
-    chosen_indices = np.linspace(0, len(freqs) - 1, 20).astype(int)
-    chosen_freqs = freqs[chosen_indices]
+    chosen_freqs = np.linspace(0, 1000, 40).astype(int)
+    chosen_indices = np.searchsorted(freqs, chosen_freqs)
+    # chosen_freqs = np.logspace(2., np.log(5000) / np.log(7),
+    #                            num=40, base=7)
+    # chosen_indices = np.searchsorted(freqs, chosen_freqs)
+    # print(freqs)
+    # raise Exception
     return chosen_indices, chosen_freqs
 
 def display_visualizer(data, chosen_freqs):
     print(chr(27) + "[2J")
     for freq, intensity in zip(chosen_freqs, data):
-        print '{: .3f}'.format(freq),
-        bars = int(intensity * 10)
-        if bars > 30: bars = 30
+        print '{: 6.0f}'.format(freq),
+        bars = int(intensity)
+        if bars > 150: bars = 150
         print '>' * bars
 
 def main():
@@ -51,7 +56,7 @@ def main():
 
     sample_count = len(signal)
     window_scount = int(sample_freq * WINDOW_LEN)  # of samples in each window
-    freqs = np.fft.fftfreq(window_scount)
+    freqs = np.fft.fftfreq(window_scount, 1. / sample_freq)
     chosen_indices, chosen_freqs = choose_freqs(freqs)
 
     pygame.mixer.init(frequency=sample_freq)
@@ -68,8 +73,6 @@ def main():
         stored.append(coeff[chosen_indices])
     print 'Pre-processing complete.'
     print 'Time taken: {:.2f} seconds.'.format(time.time() - start)
-
-    # raw_input('Press ENTER to begin display.')
 
     # display: read from processed results and play in sync with music
     sound = pygame.mixer.Sound(song_name)
