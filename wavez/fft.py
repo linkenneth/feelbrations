@@ -1,4 +1,5 @@
 import time
+import pygame
 import argparse
 import numpy as np
 
@@ -53,6 +54,7 @@ def main():
     freqs = np.fft.fftfreq(window_scount)
     chosen_indices, chosen_freqs = choose_freqs(freqs)
 
+    pygame.mixer.init(frequency=sample_freq)
     stored = []
 
     start = time.time()
@@ -67,8 +69,11 @@ def main():
     print 'Pre-processing complete.'
     print 'Time taken: {:.2f} seconds.'.format(time.time() - start)
 
-    raw_input('Press ENTER to begin display.')
+    # raw_input('Press ENTER to begin display.')
+
     # display: read from processed results and play in sync with music
+    sound = pygame.mixer.Sound(song_name)
+    sound.play()
     start = time.time()
     for i, data in enumerate(stored):
         display_visualizer(data, chosen_freqs)
