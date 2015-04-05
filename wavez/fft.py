@@ -20,6 +20,20 @@ def make_wav(fname):
     song.export(song_name, format='wav')
     return song_name
 
+def choose_freqs(freqs):
+    freqs = freqs[freqs >= 0]
+    chosen_indices = np.linspace(0, len(freqs) - 1, 20).astype(int)
+    chosen_freqs = freqs[chosen_indices]
+    return chosen_indices, chosen_freqs
+
+def display_visualizer(data, chosen_freqs):
+    print(chr(27) + "[2J")
+    for freq, intensity in zip(chosen_freqs, data):
+        print '{: .3f}'.format(freq),
+        bars = int(intensity * 10)
+        if bars > 30: bars = 30
+        print '>' * bars
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', metavar='file', type=str,
@@ -37,35 +51,36 @@ def main():
     sample_count = len(signal)
     window_scount = int(sample_freq * WINDOW_LEN)  # of samples in each window
     freqs = np.fft.fftfreq(window_scount)
+    chosen_indices, chosen_freqs = choose_freqs(freqs)
 
-    # TODO HOW TO SYNC MUSIC TO THIS?!?
-    # TODO negatives
+    stored = []
+
+    start = time.time()
+    # process: fft to analyze frequency, and arrange for motor outputs
     for i in xrange(0, sample_count, window_scount):
-        now = time.time()
-        print(chr(27) + "[2J")
-
         slice_ = ch1[i:i + window_scount]
         if len(slice_) < window_scount:
             break
         coeff = np.fft.fft(slice_)
         coeff = np.abs(coeff)  # only use magnitude of FFT coeffs
+        stored.append(coeff[chosen_indices])
+    print 'Pre-processing complete.'
+    print 'Time taken: {:.2f} seconds.'.format(time.time() - start)
 
-        SHIT_TO_MAP = [0, 10, 20, 33, 44, 50, 68, 79, 88, 100,
-                       120, 132, 152, 178, 189, 200, 220, 250, 270, 290,
-                       305, 315, 325, 338, 350, 370, 390, 410, 425, 440]  # up to 441 is positive
-        for point in SHIT_TO_MAP:
-            print '{: .3f}'.format(freqs[point]),
-            bars = int(coeff[point] * 10)
-            if bars > 30: bars = 30
-            print '>' * bars
+    raw_input('Press ENTER to begin display.')
+    # display: read from processed results and play in sync with music
+    start = time.time()
+    for i, data in enumerate(stored):
+        display_visualizer(data, chosen_freqs)
 
-        elapsed = time.time() - now
-        sleep_time = WINDOW_LEN - elapsed
+        elapsed = time.time() - start
+        sleep_time = WINDOW_LEN * (i + 1) - elapsed
         if sleep_time > 0:
-            time.sleep(WINDOW_LEN - elapsed)
+            time.sleep(sleep_time)
         else:
             # TODO incur sleep debt to catch up?
             pass
+
 
     # import code
     # code.interact(local=locals())
