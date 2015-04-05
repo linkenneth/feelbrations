@@ -1,4 +1,5 @@
 import time
+import serial
 import pygame
 import argparse
 import numpy as np
@@ -6,7 +7,8 @@ import numpy as np
 from scipy.io import wavfile
 from pydub import AudioSegment
 
-WINDOW_LEN = 0.04  # seconds
+WINDOW_LEN = 0.02  # seconds
+PORT = '/dev/cu.usbserial-AH01KY7M'
 
 def make_wav(fname):
     s = fname.split('.')
@@ -23,22 +25,38 @@ def make_wav(fname):
 
 def choose_freqs(freqs):
     freqs = freqs[freqs >= 0]
-    # chosen_freqs = np.linspace(0, 1000, 40).astype(int)
-    # chosen_indices = np.searchsorted(freqs, chosen_freqs)
-    chosen_freqs = np.logspace(2., np.log(5000) / np.log(7),
-                               num=40, base=7)
+    chosen_freqs = np.linspace(0, 1000, 40).astype(int)
     chosen_indices = np.searchsorted(freqs, chosen_freqs)
+    # chosen_freqs = np.logspace(2., np.log(5000) / np.log(7),
+    #                            num=40, base=7)
+    # chosen_indices = np.searchsorted(freqs, chosen_freqs)
     # print(freqs)
     # raise Exception
     return chosen_indices, chosen_freqs
 
+def choose_hand_freqs(freqs):
+    freqs = freqs[freqs >= 0]
+    chosen_freqs = [50, 100, 250, 350, 450, 50, 100, 250]
+    chosen_indices = np.searchsorted(freqs, chosen_freqs)
+    return chosen_indices, chosen_freqs
+
 def display_visualizer(data, chosen_freqs):
+    return
     print(chr(27) + "[2J")
     for freq, intensity in zip(chosen_freqs, data):
         print '{: 6.0f}'.format(freq),
         bars = int(intensity)
         if bars > 150: bars = 150
         print '>' * bars
+
+def display_hand(data, chosen_freqs, thresh):
+    print(chr(27) + "[2J")
+    for freq, intensity, t in zip(chosen_freqs, data, thresh):
+        print '{: 6.0f}'.format(freq),
+        bars = 0 if int(intensity) < t else 80
+        print '>' * bars
+        ser.write('{:02d}'.format(bars))
+    ser.flush()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -57,6 +75,7 @@ def main():
     sample_count = len(signal)
     window_scount = int(sample_freq * WINDOW_LEN)  # of samples in each window
     freqs = np.fft.fftfreq(window_scount, 1. / sample_freq)
+    chosen_hand_indices, chosen_hand_freqs = choose_hand_freqs(freqs)
     chosen_indices, chosen_freqs = choose_freqs(freqs)
 
     pygame.mixer.init(frequency=sample_freq)
@@ -70,7 +89,16 @@ def main():
             break
         coeff = np.fft.fft(slice_)
         coeff = np.abs(coeff)  # only use magnitude of FFT coeffs
+        # stored.append(
+        #     np.maximum.reduce([coeff[chosen_indices - 1], coeff[chosen_indices],
+        #                        coeff[chosen_indices + 1]]))
         stored.append(coeff[chosen_indices])
+
+    stored = np.array(stored)
+    med = np.median(stored, axis=0)
+    mad = 1.4826 * np.median(np.abs(stored - med), axis=0)
+    thresh = 0.7 * mad + med
+
     print 'Pre-processing complete.'
     print 'Time taken: {:.2f} seconds.'.format(time.time() - start)
 
@@ -79,6 +107,7 @@ def main():
     sound.play()
     start = time.time()
     for i, data in enumerate(stored):
+        display_hand(data, chosen_hand_freqs, thresh)
         display_visualizer(data, chosen_freqs)
 
         elapsed = time.time() - start
@@ -94,4 +123,6 @@ def main():
     # code.interact(local=locals())
 
 if __name__ == '__main__':
+    ser = serial.Serial(port=PORT, baudrate=9600)
+
     main()
