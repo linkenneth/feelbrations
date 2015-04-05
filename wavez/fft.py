@@ -23,11 +23,11 @@ def make_wav(fname):
 
 def choose_freqs(freqs):
     freqs = freqs[freqs >= 0]
-    chosen_freqs = np.linspace(0, 1000, 40).astype(int)
-    chosen_indices = np.searchsorted(freqs, chosen_freqs)
-    # chosen_freqs = np.logspace(2., np.log(5000) / np.log(7),
-    #                            num=40, base=7)
+    # chosen_freqs = np.linspace(0, 1000, 40).astype(int)
     # chosen_indices = np.searchsorted(freqs, chosen_freqs)
+    chosen_freqs = np.logspace(2., np.log(5000) / np.log(7),
+                               num=40, base=7)
+    chosen_indices = np.searchsorted(freqs, chosen_freqs)
     # print(freqs)
     # raise Exception
     return chosen_indices, chosen_freqs
