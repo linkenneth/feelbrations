@@ -41,7 +41,6 @@ def choose_hand_freqs(freqs):
     return chosen_indices, chosen_freqs
 
 def display_visualizer(data, chosen_freqs):
-    return
     print(chr(27) + "[2J")
     for freq, intensity in zip(chosen_freqs, data):
         print '{: 6.0f}'.format(freq),
@@ -50,11 +49,11 @@ def display_visualizer(data, chosen_freqs):
         print '>' * bars
 
 def display_hand(data, chosen_freqs, thresh):
-    print(chr(27) + "[2J")
+    # print(chr(27) + "[2J")
     for freq, intensity, t in zip(chosen_freqs, data, thresh):
-        print '{: 6.0f}'.format(freq),
+        # print '{: 6.0f}'.format(freq),
         bars = 0 if int(intensity) < t else 80
-        print '>' * bars
+        # print '>' * bars
         ser.write('{:02d}'.format(bars))
     ser.flush()
 
